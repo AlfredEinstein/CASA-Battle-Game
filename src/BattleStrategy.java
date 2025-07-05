@@ -1,55 +1,79 @@
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class BattleStrategy {
-    List<Platoon> playerPlatoons;
-    List<Platoon> enemyPlatoons;
+    private final List<Platoon> playerPlatoons;
+    private final List<Platoon> enemyPlatoons;
 
-    BattleStrategy(List<Platoon> player, List<Platoon> enemy){
-        this.playerPlatoons=player;
-        this.enemyPlatoons=enemy;
+    public BattleStrategy(List<Platoon> player, List<Platoon> enemy) {
+        this.playerPlatoons = player;
+        this.enemyPlatoons = enemy;
     }
-    // Try all permutations to find a winning setup
-    public List<String> findWinningArrangement() {
-        List<List<Platoon>> permutations = generatePermutations(playerPlatoons);
-        for (List<Platoon> arrangement : permutations) {
-            int wins = 0;
-            for (int i = 0; i < arrangement.size(); i++) {
-                if (arrangement.get(i).beats(enemyPlatoons.get(i))) {
+
+    public ArrangementResult findBestArrangementWithOutcome() {
+        List<List<Platoon>> permutations = getPermutations(playerPlatoons);
+        ArrangementResult bestResult = null;
+
+        for (List<Platoon> perm : permutations) {
+            int wins = 0, draws = 0;
+            List<String> outcomes = new ArrayList<>();
+
+            for (int i = 0; i < perm.size(); i++) {
+                Platoon my = perm.get(i);
+                Platoon enemy = enemyPlatoons.get(i);
+                int myPower = my.effectivePowerAgainst(enemy);
+                int enemyPower = enemy.getSoldiers();
+
+                if (myPower > enemyPower) {
+                    outcomes.add("Win");
                     wins++;
+                } else if (myPower == enemyPower) {
+                    outcomes.add("Draw");
+                    draws++;
+                } else {
+                    outcomes.add("Loss");
                 }
             }
-            if (wins >= 3) {
-                List<String> result = new ArrayList<>();
-                for (int i = 0; i < arrangement.size(); i++) {
-                    result.add(arrangement.get(i) + " vs " + enemyPlatoons.get(i));
-                }
-                return result;
+
+            if (bestResult == null || wins > bestResult.wins ||
+                    (wins == bestResult.wins && draws > bestResult.draws)) {
+                bestResult = new ArrangementResult(perm, outcomes, wins, draws);
             }
+
+            if (wins == 5) break; // optimal exit
         }
-        return null;
+
+        return bestResult;
     }
 
-    // Generate all permutations of platoons
-    private List<List<Platoon>> generatePermutations(List<Platoon> original) {
-        if (original.isEmpty()) {
-            List<List<Platoon>> result = new ArrayList<>();
-            result.add(new ArrayList<>());
-            return result;
-        }
-
-        Platoon firstElement = original.removeFirst();
-        List<List<Platoon>> returnValue = new ArrayList<>();
-        List<List<Platoon>> permutations = generatePermutations(original);
-        for (List<Platoon> smaller : permutations) {
-            for (int index = 0; index <= smaller.size(); index++) {
-                List<Platoon> temp = new ArrayList<>(smaller);
-                temp.add(index, firstElement);
-                returnValue.add(temp);
-            }
-        }
-        original.addFirst(firstElement);
-        return returnValue;
+    private List<List<Platoon>> getPermutations(List<Platoon> original) {
+        List<List<Platoon>> result = new ArrayList<>();
+        permuteHelper(original, 0, result);
+        return result;
     }
 
+    private void permuteHelper(List<Platoon> list, int index, List<List<Platoon>> result) {
+        if (index == list.size()) {
+            result.add(new ArrayList<>(list));
+            return;
+        }
+        for (int i = index; i < list.size(); i++) {
+            Collections.swap(list, i, index);
+            permuteHelper(list, index + 1, result);
+            Collections.swap(list, i, index);
+        }
+    }
+
+    public static class ArrangementResult {
+        public final List<Platoon> arrangement;
+        public final List<String> battleOutcomes;
+        public final int wins;
+        public final int draws;
+
+        public ArrangementResult(List<Platoon> arrangement, List<String> battleOutcomes, int wins, int draws) {
+            this.arrangement = arrangement;
+            this.battleOutcomes = battleOutcomes;
+            this.wins = wins;
+            this.draws = draws;
+        }
+    }
 }

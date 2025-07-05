@@ -1,6 +1,6 @@
 public class Platoon {
     private final String unitType;
-    private final int soldiers;
+    private int soldiers;
 
     Platoon(String unitType, int soldiers) {
         this.unitType = unitType;
@@ -12,6 +12,15 @@ public class Platoon {
         }
         return this.soldiers;
     }
+
+    public void setSoldiers(int soldiers){
+        this.soldiers=soldiers;
+    }
+
+    public int getSoldiers() {
+        return this.soldiers;
+    }
+
     boolean beats(Platoon opponent) {
         return effectivePowerAgainst(opponent) > opponent.soldiers;
     }
